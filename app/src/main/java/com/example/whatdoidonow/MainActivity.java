@@ -223,6 +223,46 @@ public class MainActivity extends AppCompatActivity implements TaskAdapter.TaskI
                 .show();
     }
 
+    /**
+     * Show confirmation dialog for deleting a single task
+     */
+    private void showDeleteTaskDialog(int position) {
+        Task taskToDelete = tasksList.get(position);
+
+        new MaterialAlertDialogBuilder(this)
+                .setTitle("Delete Task")
+                .setMessage("Are you sure you want to delete this task?")
+                .setPositiveButton("Delete", (dialog, which) -> {
+                    deleteTask(position);
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
+
+    /**
+     * Delete a task at the specified position
+     */
+    private void deleteTask(int position) {
+        // Check if it's the currently selected task
+        if (currentSelectedTask != null && currentSelectedTask.equals(tasksList.get(position))) {
+            currentSelectedTask = null;
+            selectedTaskTextView.setText("Your random task will appear here");
+            completeTaskBtn.setEnabled(false);
+        }
+
+        // Remove from list
+        tasksList.remove(position);
+        taskAdapter.notifyItemRemoved(position);
+
+        // Save updated list
+        taskManager.saveTasks(tasksList);
+
+        // Update UI
+        updateEmptyState();
+
+        Toast.makeText(this, "Task deleted", Toast.LENGTH_SHORT).show();
+    }
+
     @Override
     public void onTaskCheckChanged(int position, boolean isChecked) {
         tasksList.get(position).setCompleted(isChecked);
@@ -237,5 +277,11 @@ public class MainActivity extends AppCompatActivity implements TaskAdapter.TaskI
             selectedTaskTextView.setText("Task completed! Generate another one");
             completeTaskBtn.setEnabled(false);
         }
+    }
+
+    @Override
+    public void onDeleteTask(int position) {
+        // Show confirmation dialog before deleting
+        showDeleteTaskDialog(position);
     }
 }

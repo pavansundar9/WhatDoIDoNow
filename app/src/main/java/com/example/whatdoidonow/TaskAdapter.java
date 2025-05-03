@@ -11,6 +11,7 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.android.material.button.MaterialButton;
 import com.google.android.material.card.MaterialCardView;
 import com.google.android.material.chip.Chip;
 
@@ -23,6 +24,7 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
 
     public interface TaskItemClickListener {
         void onTaskCheckChanged(int position, boolean isChecked);
+        void onDeleteTask(int position);
     }
 
     public TaskAdapter(List<Task> taskList, TaskItemClickListener listener) {
@@ -58,6 +60,14 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
             }
         });
 
+        // Set delete button listener
+        holder.deleteButton.setOnClickListener(v -> {
+            int adapterPosition = holder.getAdapterPosition();
+            if (adapterPosition != RecyclerView.NO_POSITION) {
+                listener.onDeleteTask(adapterPosition);
+            }
+        });
+
         // Update UI based on completion status
         if (task.isCompleted()) {
             holder.taskTextView.setPaintFlags(holder.taskTextView.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
@@ -70,6 +80,11 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
             holder.taskStatusChip.setChipBackgroundColorResource(R.color.colorPending);
             holder.taskItemCard.setRippleColorResource(R.color.colorPending);
         }
+
+        // Handle task description if it exists in your layout
+        if (holder.taskDescriptionView != null) {
+            holder.taskDescriptionView.setVisibility(View.GONE); // Hide by default since your Task class doesn't have description
+        }
     }
 
     @Override
@@ -79,9 +94,11 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
 
     static class TaskViewHolder extends RecyclerView.ViewHolder {
         TextView taskTextView;
+        TextView taskDescriptionView;
         CheckBox taskCheckBox;
         Chip taskStatusChip;
         MaterialCardView taskItemCard;
+        MaterialButton deleteButton;
 
         public TaskViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -89,6 +106,10 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
             taskCheckBox = itemView.findViewById(R.id.taskCheckBox);
             taskStatusChip = itemView.findViewById(R.id.taskStatusChip);
             taskItemCard = (MaterialCardView) itemView;
+            deleteButton = itemView.findViewById(R.id.deleteButton);
+
+            // Try to find taskDescriptionView (it's optional)
+            taskDescriptionView = itemView.findViewById(R.id.taskDescriptionView);
         }
     }
 }

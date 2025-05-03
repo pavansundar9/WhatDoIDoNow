@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">WhatDoIDoNow</string>
+    <string name="pending">Pending</string>
 </resources>

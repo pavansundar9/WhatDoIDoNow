@@ -133,6 +133,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:hint="Enter a task"
+                    android:textColor="@color/textColorPrimary"
                     android:inputType="text"
                     android:maxLines="2" />
             </com.google.android.material.textfield.TextInputLayout>
@@ -143,6 +144,7 @@
                 android:layout_height="56dp"
                 android:layout_marginTop="8dp"
                 android:backgroundTint="@color/colorPrimary"
+                android:textColor="@color/colorBackground"
                 android:text="ADD TASK"
                 android:textSize="14sp"
                 app:cornerRadius="10dp"

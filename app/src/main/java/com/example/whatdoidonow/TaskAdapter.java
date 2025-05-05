@@ -15,12 +15,16 @@ import com.google.android.material.button.MaterialButton;
 import com.google.android.material.card.MaterialCardView;
 import com.google.android.material.chip.Chip;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 
 public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder> {
 
     private List<Task> taskList;
     private TaskItemClickListener listener;
+    private SimpleDateFormat dateFormat;
 
     public interface TaskItemClickListener {
         void onTaskCheckChanged(int position, boolean isChecked);
@@ -30,6 +34,7 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
     public TaskAdapter(List<Task> taskList, TaskItemClickListener listener) {
         this.taskList = taskList;
         this.listener = listener;
+        this.dateFormat = new SimpleDateFormat("MMM d, yyyy 'at' h:mm a", Locale.getDefault());
     }
 
     @NonNull
@@ -46,6 +51,23 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
 
         // Set task text
         holder.taskTextView.setText(task.getTaskText());
+
+        // Format and set the timestamp(s)
+        String createdDateStr = dateFormat.format(new Date(task.getCreatedAt()));
+
+        String timestampText;
+        if (task.isCompleted() && task.getCompletedAt() > 0) {
+            String completedDateStr = dateFormat.format(new Date(task.getCompletedAt()));
+            timestampText = "Created: " + createdDateStr + "\nCompleted: " + completedDateStr;
+        } else {
+            timestampText = "Created: " + createdDateStr;
+        }
+
+        // Set the timestamp text if the view exists
+        if (holder.taskDescriptionView != null) {
+            holder.taskDescriptionView.setText(timestampText);
+            holder.taskDescriptionView.setVisibility(View.VISIBLE);
+        }
 
         // Set checkbox without triggering listener
         holder.taskCheckBox.setOnCheckedChangeListener(null);
@@ -74,16 +96,13 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.TaskViewHolder
             holder.taskStatusChip.setText("Completed");
             holder.taskStatusChip.setChipBackgroundColorResource(R.color.colorCompleted);
             holder.taskItemCard.setRippleColorResource(R.color.colorCompleted);
+            holder.taskItemCard.setCardBackgroundColor(holder.itemView.getContext().getResources().getColor(R.color.green_gradient, null));
         } else {
             holder.taskTextView.setPaintFlags(holder.taskTextView.getPaintFlags() & (~Paint.STRIKE_THRU_TEXT_FLAG));
             holder.taskStatusChip.setText("Pending");
             holder.taskStatusChip.setChipBackgroundColorResource(R.color.colorPending);
             holder.taskItemCard.setRippleColorResource(R.color.colorPending);
-        }
-
-        // Handle task description if it exists in your layout
-        if (holder.taskDescriptionView != null) {
-            holder.taskDescriptionView.setVisibility(View.GONE); // Hide by default since your Task class doesn't have description
+            holder.taskItemCard.setCardBackgroundColor(holder.itemView.getContext().getResources().getColor(android.R.color.white, null)); // or your default
         }
     }
 

@@ -5,6 +5,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -14,6 +15,8 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.textfield.TextInputEditText;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Random;
 
@@ -39,6 +42,9 @@ public class MainActivity extends AppCompatActivity implements TaskAdapter.TaskI
 
         // Load saved tasks
         tasksList = taskManager.loadTasks();
+
+        // Sort tasks using our enhanced sorting logic
+        sortTasks();
 
         // Initialize UI components
         taskInputEditText = findViewById(R.id.taskInputEditText);
@@ -91,6 +97,34 @@ public class MainActivity extends AppCompatActivity implements TaskAdapter.TaskI
         updateEmptyState();
     }
 
+    /**
+     * Sort tasks with enhanced logic:
+     * 1. Incomplete tasks at the top (sorted by creation date, newest first)
+     * 2. Completed tasks at the bottom (sorted by completion date, newest first)
+     */
+    private void sortTasks() {
+        Collections.sort(tasksList, new Comparator<Task>() {
+            @Override
+            public int compare(Task task1, Task task2) {
+                // First, separate completed and incomplete tasks
+                if (task1.isCompleted() && !task2.isCompleted()) {
+                    return 1; // task1 (completed) goes after task2 (not completed)
+                } else if (!task1.isCompleted() && task2.isCompleted()) {
+                    return -1; // task1 (not completed) goes before task2 (completed)
+                }
+
+                // For tasks with the same completion status
+                if (task1.isCompleted() && task2.isCompleted()) {
+                    // Sort completed tasks by completion date (most recently completed first)
+                    return Long.compare(task2.getCompletedAt(), task1.getCompletedAt());
+                } else {
+                    // Sort incomplete tasks by creation date (newest first)
+                    return Long.compare(task2.getCreatedAt(), task1.getCreatedAt());
+                }
+            }
+        });
+    }
+
     private void addNewTask() {
         String taskText = taskInputEditText.getText().toString().trim();
 
@@ -99,10 +133,15 @@ public class MainActivity extends AppCompatActivity implements TaskAdapter.TaskI
             return;
         }
 
-        // Create new task and add to list
+        // Create new task - it will automatically get the current timestamp
         Task newTask = new Task(taskText, false);
-        tasksList.add(0, newTask);
-        taskAdapter.notifyItemInserted(0);
+
+        // Add to list and sort
+        tasksList.add(newTask);
+        sortTasks();
+
+        // Notify adapter of data change
+        taskAdapter.notifyDataSetChanged();
 
         // Save tasks to persistent storage
         taskManager.saveTasks(tasksList);
@@ -166,9 +205,14 @@ public class MainActivity extends AppCompatActivity implements TaskAdapter.TaskI
         // Find the task in the list
         for (int i = 0; i < tasksList.size(); i++) {
             if (tasksList.get(i).equals(currentSelectedTask)) {
-                // Mark as completed
+                // Mark as completed - this will automatically set the completion timestamp
                 tasksList.get(i).setCompleted(true);
-                taskAdapter.notifyItemChanged(i);
+
+                // Sort tasks to move this one to the appropriate position
+                sortTasks();
+
+                // Notify adapter of potential position changes
+                taskAdapter.notifyDataSetChanged();
 
                 // Save tasks to persistent storage
                 taskManager.saveTasks(tasksList);
@@ -177,6 +221,7 @@ public class MainActivity extends AppCompatActivity implements TaskAdapter.TaskI
                 currentSelectedTask = null;
                 selectedTaskTextView.setText("Task completed! Generate another one");
                 completeTaskBtn.setEnabled(false);
+                updateBackgroundForTaskStatus();
 
                 Toast.makeText(this, "Task marked as completed", Toast.LENGTH_SHORT).show();
                 break;
@@ -191,6 +236,31 @@ public class MainActivity extends AppCompatActivity implements TaskAdapter.TaskI
         } else {
             emptyTasksTextView.setVisibility(View.GONE);
             tasksRecyclerView.setVisibility(View.VISIBLE);
+        }
+    }
+
+    private void updateBackgroundForTaskStatus() {
+        boolean hasCompletedTasks = false;
+
+        // Check if there are any completed tasks
+        for (Task task : tasksList) {
+            if (task.isCompleted()) {
+                hasCompletedTasks = true;
+                break;
+            }
+        }
+
+        // Use direct color setting with the content view
+        View rootView = findViewById(android.R.id.content).getRootView();
+
+        if (hasCompletedTasks) {
+            // Debug message to check if this code path is executed
+            Log.d("MainActivity", "Setting background to green");
+            rootView.setBackgroundColor(getColor(R.color.green_gradient));
+        } else {
+            // Debug message
+            Log.d("MainActivity", "Setting background to default");
+            rootView.setBackgroundColor(getColor(R.color.colorBackground));
         }
     }
 
@@ -265,8 +335,14 @@ public class MainActivity extends AppCompatActivity implements TaskAdapter.TaskI
 
     @Override
     public void onTaskCheckChanged(int position, boolean isChecked) {
+        // Update completion status - this will set the completion timestamp automatically
         tasksList.get(position).setCompleted(isChecked);
-        taskAdapter.notifyItemChanged(position);
+
+        // Sort tasks after completion status changes
+        sortTasks();
+
+        // Notify adapter of potential position changes
+        taskAdapter.notifyDataSetChanged();
 
         // Save tasks to persistent storage
         taskManager.saveTasks(tasksList);
@@ -277,11 +353,14 @@ public class MainActivity extends AppCompatActivity implements TaskAdapter.TaskI
             selectedTaskTextView.setText("Task completed! Generate another one");
             completeTaskBtn.setEnabled(false);
         }
+
+        updateBackgroundForTaskStatus();
     }
 
     @Override
     public void onDeleteTask(int position) {
         // Show confirmation dialog before deleting
         showDeleteTaskDialog(position);
+        updateBackgroundForTaskStatus();
     }
 }

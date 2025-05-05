@@ -9,4 +9,5 @@
     <color name="colorWhite">#FFFFFF</color>
     <color name="colorCompleted">#4CAF50</color>
     <color name="colorPending">#FFC107</color>
+    <color name="green_gradient">#daf5db</color>
 </resources>
